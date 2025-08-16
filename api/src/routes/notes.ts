@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { z } from "zod";
 import Note from "../models/Note";
 import { tryCatch } from 'bullmq';
+import { Queue } from 'bullmq';
 
 
 const router = Router();
@@ -15,6 +16,10 @@ const noteScehma = z.object({
     webhookUrl: z.string().url()
 });
 
+const notesQueue = new Queue('notes', {
+    connection: { host: 'redis', url: process.env.REDIS_URL }
+});
+
 
 router.post("/", async (req, res) => {
     try {
@@ -25,11 +30,27 @@ router.post("/", async (req, res) => {
             releaseAt: new Date(parsed.releaseAt),
             status: "pending"
         });
+
+
+        await notesQueue.add(
+            'sendNote',
+            { id: note._id },
+            {
+                delay: note.releaseAt.getTime() - Date.now(),
+                attempts: 3,
+                backoff: {
+                    type: 'exponential',
+                    delay: 1000
+                }
+            }
+        )
+
         res.status(201).json({ id: note._id })
         return
     } catch (err: any) {
         if (err instanceof z.ZodError) {
             res.status(400).json({ error: "Invalid request data", details: err });
+            return
         }
         res.status(500).json({ error: "Internal server error", err });
         return
@@ -67,10 +88,14 @@ router.post("/:id/replay", async (req, res) => {
         const { id } = req.params;
 
         const note = await Note.findById(id);
-        if (!note) return res.status(404).json({ error: "Note not found" });
+        if (!note) {
+            res.status(404).json({ error: "Note not found" });
+            return
+        }
 
         if (note.status === "delivered" || note.status === "pending") {
-            return res.status(400).json({ error: "Note cannot be replayed" });
+            res.status(400).json({ error: "Note cannot be replayed" });
+            return
         }
 
         note.status = "pending";

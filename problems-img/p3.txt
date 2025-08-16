@@ -1,0 +1,9 @@
+** was not able to get ss as the my laptop was acting up for some reason
+
+the probelm was the after worker runs the task it was declared 'dead'
+
+afer check around for 20 - 30 i found that the 
+1 worker was was not check how tries the task attempted 
+2 was give not varible for id for monogdb _id 
+
+after that it was solved 

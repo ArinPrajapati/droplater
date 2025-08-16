@@ -1,6 +1,8 @@
 import { MongoClient, ObjectId } from 'mongodb';
 import axios from "axios"
 import { timeStamp } from 'console';
+import { tryCatch, Worker } from "bullmq"
+import * as cr from "crypto"
 
 
 const MONGO_URL = process.env.MONGO_URL || "mongodb://localhost:27017/droplater";
@@ -18,6 +20,7 @@ export interface Attempt {
 }
 
 export interface Note {
+    _id: ObjectId;
     title: string;
     body: string;
     releaseAt: Date;
@@ -28,84 +31,74 @@ export interface Note {
 }
 
 
-const backoff = (attempt: number): number => Math.pow(2, attempt) * 1000;
+async function main() {
+    await client.connect();
+    console.log('Worker is listening for jobs...');
 
-async function processNotes() {
-    const db = client.db(dbName);
-    const notes = db.collection<Note>("notes");
-
-    const currentTime = new Date();
-
-
-    const readyNotes = await notes.find({
-        releaseAt: { $lte: currentTime },
-        status: "pending"
-    }).toArray();
+    const worker = new Worker("notes", async job => {
+        const noteId = job.data.id;
+        const db = client.db(dbName);
+        const notes = db.collection<Note>("notes");
 
 
-    for (const note of readyNotes) {
+        const note = await notes.findOne<Note>({ _id: new ObjectId(noteId) });
+
+        if (!note) {
+            throw new Error(`Note with ID ${noteId} not found`);
+        }
+
         try {
             const res = await axios.post(note.webhookUrl, { content: note.body }, {
                 headers: {
-                    "X-Webhook-Id": note._id.toString(),
-                    "X-Idempotency-Key": note._id.toString()
+                    "X-Note-Id": note._id.toString(),
+                    "X-Idempotency-Key": note._id.toString(),
                 },
             });
-            if (res.status == 200 || res.status >= 300) {
-                await notes.updateOne(
-                    { _id: note._id },
-                    {
-                        $set: { status: "delivered", deliveredAt: new Date() },
-                        $push: { attempts: { at: new Date(), statusCode: res.status, ok: true } }
-                    }
-                );
-                console.log(`delivered note ${note._id} to ${note.webhookUrl}`);
-            }
-        } catch (why: any) {
-            const attemptsCount = note.attempts?.length || 0;
 
+            const attempt: Attempt = {
+                at: new Date(),
+                statusCode: res.status,
+                ok: true
+            };
             await notes.updateOne(
                 { _id: note._id },
                 {
-                    $push: {
-                        attempts: {
-                            at: new Date(),
-                            statusCode: why.response?.status || 500,
-                            error: why.message,
-                            ok: false
-                        }
-                    },
-                    $set: {
-                        status: attemptsCount + 1 >= 3 ? "dead" : "pending"
-                    }
+                    $set: { status: 'delivered', deliveredAt: new Date() },
+                    $push: { attempts: attempt }
                 }
             );
+            console.log(`Delivered note ${note._id} to ${note.webhookUrl} with status ${res.status}`);
+        } catch (why: any) {
+            console.error(`Failed to deliver note ${note._id}: ${why.message}`);
 
-            console.log(`failed send note ${note._id}, attempt ${attemptsCount + 1}`);
-
-            if (attemptsCount + 1 < 3) {
-                setTimeout(() => processSingleNote(note._id), backoff(attemptsCount));
-            }
+            await notes.updateOne(
+                { _id: note._id },
+                { $push: { attempts: { at: new Date(), statusCode: why.response?.status, ok: false, error: why.message } } }
+            );
+            throw why; // Rethrow to trigger retry logic
         }
-    }
+    }, {
+        connection: { host: 'redis', url: process.env.REDIS_URL || "redis://127.0.0.1:6379" }
+
+    });
+
+
+    worker.on('failed', async (job, err) => {
+        if (!job) return;
+
+        const db = client.db('droplater');
+        const notes = db.collection<Note>('notes');
+
+        if (job.attemptsMade >= (job.opts.attempts ?? 1)) {
+            await notes.updateOne(
+                { _id: new ObjectId(job.data.noteId) },   // ✅ fixed field
+                { $set: { status: 'dead' } }
+            );
+            console.log(`Note ${job.data.noteId} is now dead after all retries failed.`);
+        } else {
+            console.log(`Retrying note ${job.data.noteId}, attempt ${job.attemptsMade}.`);
+        }
+    });
 }
 
-
-async function processSingleNote(noteId: ObjectId) {
-    const db = client.db(dbName);
-    const notes = db.collection<Note>("notes");
-    const note = await notes.findOne({ _id: noteId })
-    if (note && note.status === "pending") {
-        await processNotes();
-    }
-
-}
-
-async function main() {
-    await client.connect();
-    console.log("worker connected to mongodb ... ");
-    setInterval(processNotes, POLL_INTERVAL)
-}
-
-
-main().catch(console.error);
+main().catch(console.error)

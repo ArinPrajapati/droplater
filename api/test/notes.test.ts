@@ -32,4 +32,27 @@ describe("Notes API", () => {
         expect(res.status).toBe(200);
         expect(Array.isArray(res.body.notes)).toBe(true);
     });
+
+    it("POST /api/notes/:id/replay - should reset status", async () => {
+        const noteRes = await request(app)
+            .post("/api/notes")
+            .set("Authorization", `Bearer ${token}`)
+            .send({
+                title: "Replay Note",
+                body: "Will replay",
+                releaseAt: new Date(Date.now() + 1000).toISOString(),
+                webhookUrl: "http://localhost:4000/hook"
+            });
+
+        const id = noteRes.body.id;
+
+        const replayRes = await request(app)
+            .post(`/api/notes/${id}/replay`)
+            .set("Authorization", `Bearer ${token}`);
+
+        expect(replayRes.status).toBe(200);
+
+        expect(replayRes.body.status).toBe("pending");
+    });
+
 });
