@@ -1,17 +1,22 @@
 import express from "express";
 import dotenv from "dotenv";
 import { connectToDB } from "./db";
+import { authcheck } from "./middlerware/auth";
+import { apiLimiter } from "./middlerware/ratelimit";
+import NotesRouter from "./routes/notes";
 
 dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-connectToDB();
-
 app.use(express.json());
 
+app.use("/api/notes", apiLimiter, authcheck, NotesRouter);
 
 app.get("/health", (_, res) => res.json({ ok: true }));
 
-app.listen(PORT, () => console.log(`API running on port ${PORT}`));
+connectToDB().then(() => {
+    app.listen(PORT, () => console.log(`API running on port ${PORT}`));
+});
 
+export { app };

@@ -29,7 +29,7 @@ router.post("/", async (req, res) => {
         return
     } catch (err: any) {
         if (err instanceof z.ZodError) {
-            res.status(400).json({ error: "Invalid request data", details: err.errors });
+            res.status(400).json({ error: "Invalid request data", details: err });
         }
         res.status(500).json({ error: "Internal server error" });
         return
@@ -52,9 +52,11 @@ router.get("/", async (req, res) => {
             .limit(limit)
             .sort({ releaseAt: -1 });
 
-        return res.json({ notes });
+        res.json({ notes });
+        return
     } catch (err) {
-        return res.status(500).json({ error: "Internal server error" });
+        res.status(500).json({ error: "Internal server error" });
+        return
     }
 });
 
@@ -75,9 +77,11 @@ router.post("/:id/replay", async (req, res) => {
         note.attempts = [];
         await note.save();
 
-        return res.json({ message: "Note requeued", id: note._id });
+        res.json({ message: "Note requeued", id: note._id });
+        return
     } catch (err) {
-        return res.status(500).json({ error: "Internal server error" });
+        res.status(500).json({ error: "Internal server error" });
+        return
     }
 });
 
