@@ -4,13 +4,23 @@ import { connectToDB } from "./db";
 import { authcheck } from "./middlerware/auth";
 import { apiLimiter } from "./middlerware/ratelimit";
 import NotesRouter from "./routes/notes";
+import cors from "cors";
 
 dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 
-app.use(express.json());
+
+
+app.use(express.json()); s
+
+cors.options({
+    origin: "*",
+    methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+    allowedHeaders: "Content-Type,Authorization",
+    credentials: true,
+});
 
 app.use("/api/notes", apiLimiter, authcheck, NotesRouter);
 

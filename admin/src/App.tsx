@@ -1,35 +1,86 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useState, useEffect } from 'react';
+import NoteForm from './components/NoteForm';
+import NotesTable from './components/NotesTable';
+import './App.css';
 
-function App() {
-  const [count, setCount] = useState(0)
-
-  return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+interface Note {
+  id: number;
+  title: string;
+  body: string;
+  releaseAt: string;
+  webhookUrl: string;
+  status: string;
 }
 
-export default App
+function App() {
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchNotes = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/notes');
+      if (response.ok) {
+        const data = await response.json();
+        setNotes(data);
+      } else {
+        console.error('Failed to fetch notes');
+      }
+    } catch (error) {
+      console.error('Error fetching notes:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchNotes();
+  }, []);
+
+  const handleNoteCreated = () => {
+    fetchNotes();
+  };
+
+  const handleReplay = async (id: number) => {
+    try {
+      const response = await fetch(`/api/notes/${id}/replay`, {
+        method: 'POST',
+      });
+      if (response.ok) {
+        alert('Note replayed successfully!');
+        fetchNotes();
+      } else {
+        const errorData = await response.json();
+        alert(`Failed to replay note: ${errorData.message}`);
+      }
+    } catch (error) {
+      console.error('Error replaying note:', error);
+      alert('An error occurred while replaying the note.');
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto py-8 px-4">
+        <div className="mb-8 text-center">
+          <h1 className="text-4xl font-bold tracking-tight mb-2">Admin Interface</h1>
+          <p className="text-muted-foreground">Manage your scheduled notes and email delivery</p>
+        </div>
+
+        <div className="space-y-8">
+          <NoteForm onNoteCreated={handleNoteCreated} />
+
+          {loading ? (
+            <div className="text-center py-8">
+              <div className="text-muted-foreground">Loading notes...</div>
+            </div>
+          ) : (
+            <NotesTable notes={notes} onReplay={handleReplay} />
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default App;
