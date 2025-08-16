@@ -1,0 +1,2 @@
+it was ts error,
+solved by adding interface to the mongodb collection 

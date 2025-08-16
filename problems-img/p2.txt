@@ -1,0 +1,4 @@
+my fault i was using test to create notes from api 
+but my test all included the api call for replay somehow that cause too many attempts from worker 
+
+but after removeing it is working

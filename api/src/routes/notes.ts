@@ -31,7 +31,7 @@ router.post("/", async (req, res) => {
         if (err instanceof z.ZodError) {
             res.status(400).json({ error: "Invalid request data", details: err });
         }
-        res.status(500).json({ error: "Internal server error" });
+        res.status(500).json({ error: "Internal server error", err });
         return
     }
 })
