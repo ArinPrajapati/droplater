@@ -11,8 +11,9 @@ Internet connection for downloading images
 
 Clone the repository:
 
-git clone https://github.com/ArinPrajapati/droplater
-cd droplater
+`git clone https://github.com/ArinPrajapati/droplater`  
+
+`cd droplater`
 
 
 Start services with Docker Compose:
