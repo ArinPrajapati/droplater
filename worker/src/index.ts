@@ -91,7 +91,7 @@ async function main() {
 
         if (job.attemptsMade >= (job.opts.attempts ?? 1)) {
             await notes.updateOne(
-                { _id: new ObjectId(job.data.noteId) },   // ✅ fixed field
+                { _id: new ObjectId(job.data.id) },
                 { $set: { status: 'dead' } }
             );
             console.log(`Note ${job.data.noteId} is now dead after all retries failed.`);

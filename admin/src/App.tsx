@@ -54,6 +54,10 @@ function App() {
     try {
       const response = await fetch(`http://localhost:3000/api/notes/${id}/replay`, {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          "Authorization": `Bearer test-secret`
+        }
       });
       if (response.ok) {
         alert('Note replayed successfully!');

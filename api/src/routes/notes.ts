@@ -101,6 +101,18 @@ router.post("/:id/replay", async (req, res) => {
         note.status = "pending";
         note.attempts = [];
         await note.save();
+        await notesQueue.add(
+            'sendNote',
+            { id: note._id },
+            {
+                delay: 0,
+                attempts: 3,
+                backoff: {
+                    type: 'exponential',
+                    delay: 1000
+                }
+            }
+        )
 
         res.json({ message: "Note requeued", id: note._id });
         return

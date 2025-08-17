@@ -1,0 +1,6 @@
+problem number 4 
+the replay notes are not beening sent to there address by work
+
+no solution found yet
+
+solution: we were not adding the replay in queue again after that it works
