@@ -1,0 +1,4 @@
+2 problem after using docker 
+
+one we are not a able find the sink hook 
+other is delay is somehow set millions of year later 
