@@ -1,4 +1,4 @@
-import express from "express"
+import express, { Request, Response } from "express"
 import { Redis } from "ioredis"
 
 const app = express();
@@ -6,11 +6,11 @@ const port = 4000;
 app.use(express.json());
 
 const redis = new Redis({
-    host: process.env.REDIS_HOST || 'localhost',
+    host: process.env.REDIS_HOST || 'redis',
     port: parseInt(process.env.REDIS_PORT || '6379', 10),
 });
 
-app.post('/hook', async (req, res) => {
+app.post('/hook', async (req: Request, res: Response) => {
     const idempotencyKey = req.headers['x-idempotency-key'] as string;
 
     if (!idempotencyKey) {
@@ -30,7 +30,7 @@ app.post('/hook', async (req, res) => {
     }
 });
 
-app.get('/health', (req, res) => {
+app.get('/health', (req: Request, res: Response) => {
     res.status(200).send({ status: 'OK' });
 });
 

@@ -96,7 +96,7 @@ async function main() {
             );
             console.log(`Note ${job.data.noteId} is now dead after all retries failed.`);
         } else {
-            console.log(`Retrying note ${job.data.noteId}, attempt ${job.attemptsMade}.`);
+            console.log(`Retrying note ${job.data.id}, attempt ${job.attemptsMade}.`);
         }
     });
 }

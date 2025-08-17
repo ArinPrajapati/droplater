@@ -1,4 +1,4 @@
-version: "0.1"
+version: "3.9"
 
 services:
   mongo:
@@ -7,14 +7,26 @@ services:
       - "27017:27017"
     volumes:
       - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:7
     ports:
       - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
 
   api:
-    build: ./api
+    build: 
+      context: ./api
+      dockerfile: Dockerfile
     command: pnpm dev
     volumes:
       - ./api:/app
@@ -22,6 +34,9 @@ services:
       - "3000:3000"
     env_file:
       - ./api/.env
+    depends_on:
+      - mongo
+      - redis
 
   worker:
     build: ./worker
@@ -30,6 +45,8 @@ services:
       - ./worker:/app
     env_file:
       - ./worker/.env
+    depends_on:
+      - api
 
   sink:
     build: ./sink
@@ -40,6 +57,8 @@ services:
       - "4000:4000"
     env_file:
       - ./sink/.env
+    depends_on:
+      - worker
 
 volumes:
   mongo_data:
