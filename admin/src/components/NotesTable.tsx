@@ -12,14 +12,16 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { RotateCcw } from 'lucide-react';
+import { BorderBeam } from './magicui/border-beam';
 
 interface Note {
-  id: number;
+  _id: number;
   title: string;
   body: string;
   releaseAt: string;
   webhookUrl: string;
   status: string;
+  attempts?: []
 }
 
 interface NotesTableProps {
@@ -27,7 +29,7 @@ interface NotesTableProps {
   onReplay: (id: number) => void;
 }
 
-const NotesTable: React.FC<NotesTableProps> = ({ notes, onReplay }) => {
+const NotesTable: React.FC<NotesTableProps> = ({ notes, onReplay, onRefresh }) => {
   const [replayingIds, setReplayingIds] = useState<Set<number>>(new Set());
 
   const handleReplay = async (id: number) => {
@@ -82,12 +84,13 @@ const NotesTable: React.FC<NotesTableProps> = ({ notes, onReplay }) => {
                   <TableHead>Webhook URL</TableHead>
                   <TableHead className="w-[100px]">Status</TableHead>
                   <TableHead className="w-[120px] text-right">Actions</TableHead>
+                  <TableHead className='w-[15px] text-right'>Attemptes</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {notes.map((note) => (
-                  <TableRow key={note.id}>
-                    <TableCell className="font-medium">{note.id}</TableCell>
+                {notes && notes?.map((note) => (
+                  <TableRow key={note._id}>
+                    <TableCell className="font-medium">{note._id}</TableCell>
                     <TableCell className="font-medium">{note.title}</TableCell>
                     <TableCell
                       className="max-w-[300px]"
@@ -109,22 +112,31 @@ const NotesTable: React.FC<NotesTableProps> = ({ notes, onReplay }) => {
                       </a>
                     </TableCell>
                     <TableCell>
-                      <Badge variant={getStatusBadgeVariant(note.status)}>
+                      <Badge className="relative" variant={getStatusBadgeVariant(note.status)}>
                         {note.status}
+                        {note.status === "delivered" && (
+                          <BorderBeam duration={100} size={90} />
+                        )}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
                       <Button
-                        onClick={() => handleReplay(note.id)}
-                        disabled={replayingIds.has(note.id)}
+                        onClick={() => handleReplay(note._id)}
+                        disabled={replayingIds.has(note._id)}
                         size="sm"
                         variant="outline"
                         className="gap-2"
                       >
                         <RotateCcw className="h-4 w-4" />
-                        {replayingIds.has(note.id) ? 'Replaying...' : 'Replay'}
+                        {replayingIds.has(note._id) ? 'Replaying...' : 'Replay'}
                       </Button>
                     </TableCell>
+                    <TableCell>
+                      <Badge className="relative" variant={getStatusBadgeVariant(note.status)}>
+                        {note.attempts?.length}
+                      </Badge>
+                    </TableCell>
+
                   </TableRow>
                 ))}
               </TableBody>

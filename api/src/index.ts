@@ -13,14 +13,9 @@ const PORT = process.env.PORT || 3000;
 
 
 
-app.use(express.json()); s
+app.use(express.json());
 
-cors.options({
-    origin: "*",
-    methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
-    allowedHeaders: "Content-Type,Authorization",
-    credentials: true,
-});
+app.use(cors())
 
 app.use("/api/notes", apiLimiter, authcheck, NotesRouter);
 

@@ -4,12 +4,13 @@ import NotesTable from './components/NotesTable';
 import './App.css';
 
 interface Note {
-  id: number;
+  _id: number;
   title: string;
   body: string;
   releaseAt: string;
   webhookUrl: string;
   status: string;
+  attempts?: [{}]
 }
 
 function App() {
@@ -19,10 +20,17 @@ function App() {
   const fetchNotes = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/notes');
+      const response = await fetch('http://localhost:3000/api/notes?', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          "Authorization": `Bearer test-secret`
+        }
+      }
+      );
       if (response.ok) {
         const data = await response.json();
-        setNotes(data);
+        setNotes(data.notes);
       } else {
         console.error('Failed to fetch notes');
       }
@@ -34,6 +42,7 @@ function App() {
   };
 
   useEffect(() => {
+    console.log("fetching notes...");
     fetchNotes();
   }, []);
 
@@ -43,7 +52,7 @@ function App() {
 
   const handleReplay = async (id: number) => {
     try {
-      const response = await fetch(`/api/notes/${id}/replay`, {
+      const response = await fetch(`http://localhost:3000/api/notes/${id}/replay`, {
         method: 'POST',
       });
       if (response.ok) {
