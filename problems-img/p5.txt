@@ -1,4 +1,8 @@
 2 problem after using docker 
 
-one we are not a able find the sink hook 
+one we are not a able find the sink hook
+- 
+
 other is delay is somehow set millions of year later 
+- The Docker time issue was a problem because in my container's clock was out of sync with from my host machine, making it impossible for BullMQ to process delayed jobs at the correct time.
+- but do takle this i used very thought why not just send the delay from the FE instead for calculating it in the BE solved

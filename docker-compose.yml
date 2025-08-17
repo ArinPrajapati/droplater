@@ -7,26 +7,14 @@ services:
       - "27017:27017"
     volumes:
       - mongo_data:/data/db
-    healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
 
   redis:
     image: redis:7
     ports:
       - "6379:6379"
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 3s
-      retries: 5
 
   api:
-    build: 
-      context: ./api
-      dockerfile: Dockerfile
+    build: ./api
     command: pnpm dev
     volumes:
       - ./api:/app

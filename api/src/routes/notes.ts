@@ -1,8 +1,8 @@
 import { Router } from 'express';
 import { z } from "zod";
 import Note from "../models/Note";
-import { tryCatch } from 'bullmq';
 import { Queue } from 'bullmq';
+import { de } from 'zod/v4/locales/index.cjs';
 
 
 const router = Router();
@@ -13,11 +13,12 @@ const noteScehma = z.object({
     releaseAt: z.string().refine((val) => !isNaN(Date.parse(val)), {
         message: "Invalid date format (must be ISO string)"
     }),
-    webhookUrl: z.string().url()
+    webhookUrl: z.string().url(),
+    delay: z.number().min(0).optional(),
 });
 
 const notesQueue = new Queue('notes', {
-    connection: { host: 'redis', url: process.env.REDIS_URL }
+    connection: { url: process.env.REDIS_URL }
 });
 
 
@@ -25,18 +26,21 @@ router.post("/", async (req, res) => {
     try {
         const parsed = noteScehma.parse(req.body);
 
+        console.log(parsed.releaseAt)
+
         const note = await Note.create({
-            ...parsed,
-            releaseAt: new Date(parsed.releaseAt),
+            title: parsed.title,
+            body: parsed.body,
+            webhookUrl: parsed.webhookUrl,
+            releaseAt: parsed.releaseAt,
             status: "pending"
         });
-
 
         await notesQueue.add(
             'sendNote',
             { id: note._id },
             {
-                delay: note.releaseAt.getTime() - Date.now(),
+                delay: parsed.delay,
                 attempts: 3,
                 backoff: {
                     type: 'exponential',

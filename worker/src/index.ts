@@ -41,6 +41,8 @@ async function main() {
         const notes = db.collection<Note>("notes");
 
 
+        console.log("processing note", noteId);
+
         const note = await notes.findOne<Note>({ _id: new ObjectId(noteId) });
 
         if (!note) {
@@ -75,10 +77,10 @@ async function main() {
                 { _id: note._id },
                 { $push: { attempts: { at: new Date(), statusCode: why.response?.status, ok: false, error: why.message } } }
             );
-            throw why; // Rethrow to trigger retry logic
+            throw why;
         }
     }, {
-        connection: { host: 'redis', url: process.env.REDIS_URL || "redis://127.0.0.1:6379" }
+        connection: { url: process.env.REDIS_URL || "redis://redis:6379" }
 
     });
 
@@ -94,7 +96,7 @@ async function main() {
                 { _id: new ObjectId(job.data.id) },
                 { $set: { status: 'dead' } }
             );
-            console.log(`Note ${job.data.noteId} is now dead after all retries failed.`);
+            console.log(`Note ${job.data.id} is now dead after all retries failed.`);
         } else {
             console.log(`Retrying note ${job.data.id}, attempt ${job.attemptsMade}.`);
         }

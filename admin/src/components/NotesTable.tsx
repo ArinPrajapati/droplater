@@ -99,7 +99,9 @@ const NotesTable: React.FC<NotesTableProps> = ({ notes, onReplay, onRefresh }) =
                       {truncateContent(note.body)}
                     </TableCell>
                     <TableCell>
-                      {new Date(note.releaseAt).toLocaleString()}
+                      {new Date(
+                        new Date(note.releaseAt).getTime() - (5 * 60 + 30) * 60 * 1000
+                      ).toLocaleString()}
                     </TableCell>
                     <TableCell className="max-w-[200px] truncate">
                       <a

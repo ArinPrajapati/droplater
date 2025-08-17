@@ -28,6 +28,7 @@ const NoteForm: React.FC<NoteFormProps> = ({ onNoteCreated }) => {
     setIsSubmitting(true);
 
     try {
+      const delay = Math.max(0, new Date(releaseAt).getTime() - Date.now());
       const response = await fetch('http://localhost:3000/api/notes', {
         method: 'POST',
         headers: {
@@ -39,6 +40,7 @@ const NoteForm: React.FC<NoteFormProps> = ({ onNoteCreated }) => {
           body,
           releaseAt,
           webhookUrl,
+          delay: delay
         }),
       });
 
