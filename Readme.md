@@ -77,6 +77,6 @@ After a worker ran a task, it was declared "dead".
 
     - Solution: Instead of relying on container time, calculate and send the delay from the frontend and send to the backend.
 
-
+## Drawing 
 ![DropLater Architecture](./problems-img/image.jpg)
 
